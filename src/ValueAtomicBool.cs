@@ -4,7 +4,7 @@ using Soenneker.Atomics.ValueInts;
 namespace Soenneker.Atomics.ValueBools;
 
 /// <summary>
-/// A lightweight, allocation-free atomic boolean implemented on top of an inline
+/// A lightweight, allocation-free atomic boolean struct implemented on top of an inline
 /// <see cref="ValueAtomicInt"/>.
 /// <para/>
 /// This type provides atomic read, write, and compare-and-set semantics for boolean
@@ -22,7 +22,7 @@ namespace Soenneker.Atomics.ValueBools;
 /// of the atomic state.
 /// </para>
 /// </remarks>
-public struct AtomicBool
+public struct ValueAtomicBool
 {
     private const int _false = 0;
     private const int _true = 1;
@@ -30,13 +30,13 @@ public struct AtomicBool
     private ValueAtomicInt _value;
 
     /// <summary>
-    /// Initializes a new <see cref="AtomicBool"/> with the specified initial value.
+    /// Initializes a new <see cref="ValueAtomicBool"/> with the specified initial value.
     /// </summary>
     /// <param name="initialValue">
     /// The initial boolean value.
     /// </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public AtomicBool(bool initialValue = false) => _value = new ValueAtomicInt(initialValue ? _true : _false);
+    public ValueAtomicBool(bool initialValue = false) => _value = new ValueAtomicInt(initialValue ? _true : _false);
 
     /// <summary>
     /// Reads the current value of the atomic boolean.
