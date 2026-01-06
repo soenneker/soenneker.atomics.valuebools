@@ -1,5 +1,6 @@
-﻿using System.Runtime.CompilerServices;
-using Soenneker.Atomics.ValueInts;
+﻿using Soenneker.Atomics.ValueInts;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Soenneker.Atomics.ValueBools;
 
@@ -22,6 +23,7 @@ namespace Soenneker.Atomics.ValueBools;
 /// of the atomic state.
 /// </para>
 /// </remarks>
+[DebuggerDisplay("{Value}")]
 public struct ValueAtomicBool
 {
     private const int _false = 0;
