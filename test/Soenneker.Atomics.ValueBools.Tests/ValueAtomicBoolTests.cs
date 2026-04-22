@@ -1,10 +1,9 @@
-﻿using Xunit;
 
 namespace Soenneker.Atomics.ValueBools.Tests;
 
 public sealed class ValueAtomicBoolTests
 {
-    [Fact]
+    [Test]
     public void Default()
     {
 
