@@ -31,12 +31,6 @@ public struct ValueAtomicBool
 
     private ValueAtomicInt _value;
 
-    /// <summary>
-    /// Initializes a new <see cref="ValueAtomicBool"/> with the specified initial value.
-    /// </summary>
-    /// <param name="initialValue">
-    /// The initial boolean value.
-    /// </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ValueAtomicBool(bool initialValue = false) => _value = new ValueAtomicInt(initialValue ? _true : _false);
 
