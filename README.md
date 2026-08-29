@@ -13,6 +13,27 @@ A lightweight, allocation-free atomic boolean struct implemented on top of an in
 dotnet add package Soenneker.Atomics.ValueBools
 ```
 
+## Usage
+
+Keep the mutable struct in a field so every operation addresses the same storage:
+
+```csharp
+using Soenneker.Atomics.ValueBools;
+
+public sealed class Worker
+{
+    private ValueAtomicBool _stopping;
+
+    public bool RequestStop() => _stopping.TrySetTrue();
+
+    public bool IsStopping => _stopping.Read();
+}
+```
+
+Do not expose it through a value-returning property, pass it by value, or store it in an API that copies structs. A copy contains independent atomic state; changes to the copy do not update the original field. Use the reference-type `AtomicBool` package when the state itself must be passed between objects.
+
+Individual operations are atomic, but a read followed by a write is not one conditional operation. Use `CompareAndSet`, `TrySetTrue`, or `TrySetFalse` for state transitions.
+
 ## What you get
 
 - `ValueAtomicBool` — A lightweight, allocation-free atomic boolean struct implemented on top of an inline `ValueAtomicInt`. This type provides atomic read, write, and compare-and-set semantics for boolean values using a single integer backing field (0 = false, 1 = true).
