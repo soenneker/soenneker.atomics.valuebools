@@ -1,15 +1,14 @@
-﻿using Soenneker.Atomics.ValueInts;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Soenneker.Atomics.ValueBools;
 
 /// <summary>
-/// A lightweight, allocation-free atomic boolean struct implemented on top of an inline
-/// <see cref="ValueAtomicInt"/>.
+/// A lightweight, allocation-free atomic boolean struct backed by a single byte.
 /// <para/>
 /// This type provides atomic read, write, and compare-and-set semantics for boolean
-/// values using a single integer backing field (0 = false, 1 = true).
+/// values using <see cref="Volatile"/> and <see cref="Interlocked"/> (0 = false, 1 = true).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -26,13 +25,15 @@ namespace Soenneker.Atomics.ValueBools;
 [DebuggerDisplay("{Value}")]
 public struct ValueAtomicBool
 {
-    private const int _false = 0;
-    private const int _true = 1;
+    private const byte _false = 0;
+    private const byte _true = 1;
 
-    private ValueAtomicInt _value;
+    // Every write stores 0 or 1, so reads can reinterpret the byte as a normalized
+    // bool without an additional comparison. This matches a plain bool load.
+    private byte _value;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ValueAtomicBool(bool initialValue = false) => _value = new ValueAtomicInt(initialValue ? _true : _false);
+    public ValueAtomicBool(bool initialValue = false) => _value = initialValue ? _true : _false;
 
     /// <summary>
     /// Reads the current value of the atomic boolean.
@@ -41,7 +42,7 @@ public struct ValueAtomicBool
     /// <see langword="true"/> if the current value is true; otherwise <see langword="false"/>.
     /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Read() => _value.Read() != _false;
+    public bool Read() => Unsafe.BitCast<byte, bool>(Volatile.Read(ref _value));
 
     /// <summary>
     /// Writes a new value to the atomic boolean.
@@ -50,10 +51,22 @@ public struct ValueAtomicBool
     /// The value to assign.
     /// </param>
     /// <remarks>
-    /// This operation performs an atomic write with release semantics.
+    /// This operation uses an interlocked exchange and provides a full memory fence.
+    /// Use <see cref="VolatileWrite"/> when only release ordering is required.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Write(bool value) => _value.Write(value ? _true : _false);
+    public void Write(bool value) => Interlocked.Exchange(ref _value, value ? _true : _false);
+
+    /// <summary>
+    /// Writes a value with release semantics, publishing preceding writes to readers
+    /// that observe it through <see cref="Read"/> or <see cref="Value"/>.
+    /// </summary>
+    /// <param name="value">The value to store.</param>
+    /// <remarks>
+    /// This does not perform a read-modify-write operation or provide the full memory fence of <see cref="Write"/>.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void VolatileWrite(bool value) => Volatile.Write(ref _value, value ? _true : _false);
 
     /// <summary>
     /// Atomically replaces the current value with <paramref name="value"/> and
@@ -66,7 +79,7 @@ public struct ValueAtomicBool
     /// The value that was stored prior to the exchange.
     /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Exchange(bool value) => _value.Exchange(value ? _true : _false) == _true;
+    public bool Exchange(bool value) => Unsafe.BitCast<byte, bool>(Interlocked.Exchange(ref _value, value ? _true : _false));
 
     /// <summary>
     /// Atomically sets the value to <paramref name="newValue"/> if the current value
@@ -83,22 +96,22 @@ public struct ValueAtomicBool
     /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool CompareAndSet(bool expected, bool newValue) =>
-        _value.CompareExchange(newValue ? _true : _false, expected ? _true : _false) == (expected ? _true : _false);
+        Interlocked.CompareExchange(ref _value, newValue ? _true : _false, expected ? _true : _false) == (expected ? _true : _false);
 
     /// <summary>
     /// Gets or sets the current value of the atomic boolean.
     /// </summary>
     /// <remarks>
     /// The getter performs an atomic read with acquire semantics.
-    /// The setter performs an atomic write with release semantics.
+    /// The setter uses an interlocked exchange and provides a full memory fence.
     /// </remarks>
     public bool Value
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _value.Read() != _false;
+        get => Read();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        set => _value.Write(value ? _true : _false);
+        set => Write(value);
     }
 
     /// <summary>
@@ -114,7 +127,7 @@ public struct ValueAtomicBool
     /// spin or retry.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TrySetTrue() => _value.TrySet(_true, _false);
+    public bool TrySetTrue() => Interlocked.CompareExchange(ref _value, _true, _false) == _false;
 
     /// <summary>
     /// Attempts to atomically transition the value from <see langword="true"/> to
@@ -129,7 +142,7 @@ public struct ValueAtomicBool
     /// spin or retry.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TrySetFalse() => _value.TrySet(_false, _true);
+    public bool TrySetFalse() => Interlocked.CompareExchange(ref _value, _false, _true) == _true;
 
     /// <summary>
     /// Returns a string representation of the current value.
