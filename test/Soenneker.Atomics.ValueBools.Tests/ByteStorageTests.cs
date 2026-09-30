@@ -9,7 +9,7 @@ namespace Soenneker.Atomics.ValueBools.Tests;
 public sealed class ByteStorageTests
 {
     [Test]
-    public async Task Storage_is_one_byte_and_default_is_false()
+    public async ValueTask Storage_is_one_byte_and_default_is_false()
     {
         await Assert.That(Unsafe.SizeOf<ValueAtomicBool>()).IsEqualTo(1);
         await Assert.That(Unsafe.SizeOf<AdjacentFields>()).IsEqualTo(3);
@@ -19,7 +19,7 @@ public sealed class ByteStorageTests
     }
 
     [Test]
-    public async Task Writes_exchanges_and_conditional_transitions_preserve_results()
+    public async ValueTask Writes_exchanges_and_conditional_transitions_preserve_results()
     {
         ValueAtomicBool flag = default;
         await Assert.That(flag.Exchange(true)).IsFalse();
@@ -41,7 +41,7 @@ public sealed class ByteStorageTests
     }
 
     [Test]
-    public async Task Byte_atomics_do_not_modify_adjacent_storage()
+    public async ValueTask Byte_atomics_do_not_modify_adjacent_storage()
     {
         var values = new AdjacentFields[32];
         for (int i = 0; i < values.Length; i++)
@@ -68,7 +68,7 @@ public sealed class ByteStorageTests
     }
 
     [Test]
-    public async Task Compare_and_set_has_one_owner_under_contention()
+    public async ValueTask Compare_and_set_has_one_owner_under_contention()
     {
         var holder = new Holder();
         int inside = 0, violations = 0;
@@ -91,7 +91,7 @@ public sealed class ByteStorageTests
     }
 
     [Test]
-    public async Task Volatile_write_publishes_payload_to_acquire_readers()
+    public async ValueTask Volatile_write_publishes_payload_to_acquire_readers()
     {
         var holder = new Holder();
         int violations = 0;
