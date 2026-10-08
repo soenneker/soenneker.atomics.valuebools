@@ -9,7 +9,7 @@ namespace Soenneker.Atomics.ValueBools.Tests;
 public sealed class ByteStorageTests
 {
     [Test]
-    public async ValueTask Storage_is_one_byte_and_default_is_false()
+    public async ValueTask Storage_is_one_byte_and_default_is_false(CancellationToken cancellationToken)
     {
         await Assert.That(Unsafe.SizeOf<ValueAtomicBool>()).IsEqualTo(1);
         await Assert.That(Unsafe.SizeOf<AdjacentFields>()).IsEqualTo(3);
@@ -19,7 +19,7 @@ public sealed class ByteStorageTests
     }
 
     [Test]
-    public async ValueTask Writes_exchanges_and_conditional_transitions_preserve_results()
+    public async ValueTask Writes_exchanges_and_conditional_transitions_preserve_results(CancellationToken cancellationToken)
     {
         ValueAtomicBool flag = default;
         await Assert.That(flag.Exchange(true)).IsFalse();
@@ -41,7 +41,7 @@ public sealed class ByteStorageTests
     }
 
     [Test]
-    public async ValueTask Byte_atomics_do_not_modify_adjacent_storage()
+    public async ValueTask Byte_atomics_do_not_modify_adjacent_storage(CancellationToken cancellationToken)
     {
         var values = new AdjacentFields[32];
         for (int i = 0; i < values.Length; i++)
@@ -68,7 +68,7 @@ public sealed class ByteStorageTests
     }
 
     [Test]
-    public async ValueTask Compare_and_set_has_one_owner_under_contention()
+    public async ValueTask Compare_and_set_has_one_owner_under_contention(CancellationToken cancellationToken)
     {
         var holder = new Holder();
         int inside = 0, violations = 0;
@@ -85,13 +85,13 @@ public sealed class ByteStorageTests
                 Interlocked.Decrement(ref inside);
                 holder.Flag.VolatileWrite(false);
             }
-        })).WaitAsync(TimeSpan.FromSeconds(15));
+        })).WaitAsync(TimeSpan.FromSeconds(15), cancellationToken: cancellationToken);
         await Assert.That(holder.Value).IsEqualTo(40000);
         await Assert.That(violations).IsEqualTo(0);
     }
 
     [Test]
-    public async ValueTask Volatile_write_publishes_payload_to_acquire_readers()
+    public async ValueTask Volatile_write_publishes_payload_to_acquire_readers(CancellationToken cancellationToken)
     {
         var holder = new Holder();
         int violations = 0;
@@ -106,7 +106,7 @@ public sealed class ByteStorageTests
                 holder.Complement = ~i;
                 holder.Flag.VolatileWrite(true);
             }
-        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         Task reader = Task.Factory.StartNew(() =>
         {
             for (int i = 1; i <= 10000; i++)
@@ -118,8 +118,8 @@ public sealed class ByteStorageTests
                     violations++;
                 holder.Flag.VolatileWrite(false);
             }
-        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-        await Task.WhenAll(writer, reader).WaitAsync(TimeSpan.FromSeconds(15));
+        }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        await Task.WhenAll(writer, reader).WaitAsync(TimeSpan.FromSeconds(15), cancellationToken: cancellationToken);
         await Assert.That(violations).IsEqualTo(0);
     }
 
