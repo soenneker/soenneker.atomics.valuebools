@@ -123,11 +123,11 @@ public struct ValueAtomicBool
     /// was already <see langword="true"/>.
     /// </returns>
     /// <remarks>
-    /// This method performs a single compare-and-exchange operation and does not
-    /// spin or retry.
+    /// This method performs a single interlocked exchange and provides a full memory
+    /// fence. The target value is written even when it is already stored.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TrySetTrue() => Interlocked.CompareExchange(ref _value, _true, _false) == _false;
+    public bool TrySetTrue() => !Unsafe.BitCast<byte, bool>(Interlocked.Exchange(ref _value, _true));
 
     /// <summary>
     /// Attempts to atomically transition the value from <see langword="true"/> to
@@ -138,11 +138,11 @@ public struct ValueAtomicBool
     /// was already <see langword="false"/>.
     /// </returns>
     /// <remarks>
-    /// This method performs a single compare-and-exchange operation and does not
-    /// spin or retry.
+    /// This method performs a single interlocked exchange and provides a full memory
+    /// fence. The target value is written even when it is already stored.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TrySetFalse() => Interlocked.CompareExchange(ref _value, _false, _true) == _true;
+    public bool TrySetFalse() => Unsafe.BitCast<byte, bool>(Interlocked.Exchange(ref _value, _false));
 
     /// <summary>
     /// Returns a string representation of the current value.
